@@ -4,51 +4,56 @@ require_once 'model/ContactsService.php';
 
 class ContactsController
 {
-
-    private $contactsService = null;
+    /** @var ContactsService */
+    private $contactsService;
 
     public function __construct()
     {
         $this->contactsService = new ContactsService();
     }
 
-    public function redirect($location)
+    public function redirect(string $location): void
     {
         header('Location: ' . $location);
     }
 
-    public function handleRequest()
+    public function handleRequest(): void
     {
-        $op = isset($_GET['op']) ? $_GET['op'] : null;
+        $op = $_GET['op'] ?? null;
         try {
-            if (!$op || $op == 'list') {
+            if (!$op || $op === 'list') {
                 $this->listContacts();
-            } elseif ($op == 'new') {
+            } elseif ($op === 'new') {
                 $this->saveContact();
-            } elseif ($op == 'delete') {
+            } elseif ($op === 'delete') {
                 $this->deleteContact();
-            } elseif ($op == 'show') {
+            } elseif ($op === 'show') {
                 $this->showContact();
             } else {
                 $this->showError(
-                    "Page not found",
-                    "Page for operation " . $op . " was not found!"
+                    'Page not found',
+                    'Page for operation ' . $op . ' was not found!'
                 );
             }
         } catch (Exception $e) {
             // some unknown Exception got through here, use application error page to display it
-            $this->showError("Application error", $e->getMessage());
+            $this->showError('Application error', $e->getMessage());
         }
     }
 
-    public function listContacts()
+    public function listContacts(): void
     {
-        $orderby = isset($_GET['orderby']) ? $_GET['orderby'] : null;
-        $contacts = $this->contactsService->getAllContacts($orderby);
+        $orderby = $_GET['orderby'] ?? null;
+        try {
+            $contacts = $this->contactsService->getAllContacts($orderby);
+        } catch (Exception $error) {
+            throw $error;
+        }
+
         include 'view/contacts.php';
     }
 
-    public function saveContact()
+    public function saveContact(): void
     {
 
         $title = 'Add new contact';
@@ -62,10 +67,10 @@ class ContactsController
 
         if (isset($_POST['form-submitted'])) {
 
-            $name = isset($_POST['name']) ? $_POST['name'] : null;
-            $phone = isset($_POST['phone']) ? $_POST['phone'] : null;
-            $email = isset($_POST['email']) ? $_POST['email'] : null;
-            $address = isset($_POST['address']) ? $_POST['address'] : null;
+            $name = $_POST['name'] ?? null;
+            $phone = $_POST['phone'] ?? null;
+            $email = $_POST['email'] ?? null;
+            $address = $_POST['address'] ?? null;
 
             try {
                 $this->contactsService->createNewContact(
@@ -73,17 +78,17 @@ class ContactsController
                 );
                 $this->redirect('index.php');
                 return;
-            } catch (ValidationException $e) {
-                $errors = $e->getErrors();
+            } catch (Exception $e) {
+                $errors = $e->getMessage();
             }
         }
 
         include 'view/contact-form.php';
     }
 
-    public function deleteContact()
+    public function deleteContact(): void
     {
-        $id = isset($_GET['id']) ? $_GET['id'] : null;
+        $id = $_GET['id'] ?? null;
         if (!$id) {
             throw new Exception('Internal error.');
         }
@@ -93,18 +98,23 @@ class ContactsController
         $this->redirect('index.php');
     }
 
-    public function showContact()
+    public function showContact(): void
     {
-        $id = isset($_GET['id']) ? $_GET['id'] : null;
+        $id = $_GET['id'] ?? null;
         if (!$id) {
             throw new Exception('Internal error.');
         }
-        $contact = $this->contactsService->getContact($id);
+        try {
+            $contact = $this->contactsService->getContact($id);
+        } catch (Exception $exception) {
+            $exception->getMessage();
+        }
+
 
         include 'view/contact.php';
     }
 
-    public function showError($title, $message)
+    public function showError(string $title, string $message): void
     {
         include 'view/error.php';
     }

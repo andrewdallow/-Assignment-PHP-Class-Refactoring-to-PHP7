@@ -7,35 +7,59 @@ require_once 'model/ValidationException.php';
 class ContactsService
 {
 
-    private $contactsGateway = null;
+    private $contactsGateway;
+    private $db;
 
-    private function openDb()
+    /**
+     * @throws Exception
+     */
+    private function openDb(): void
     {
-        if (!mysql_connect("localhost", "root", "")) {
-            throw new Exception("Connection to the database server failed!");
+        try {
+            $this->db = new mysqli('localhost', 'root', '');
+
+            if ($this->db->connect_error) {
+                throw new Exception(
+                    'Connection to the database server failed!'
+                );
+            }
+            if (!mysqli_select_db($this->db, 'mvc-crud')) {
+                throw new Exception(
+                    'No mvc-crud database found on database server.'
+                );
+            }
+        } catch (mysqli_sql_exception $exception) {
+            throw $exception;
         }
-        if (!mysql_select_db("mvc-crud")) {
-            throw new Exception(
-                "No mvc-crud database found on database server."
-            );
+
+    }
+
+    private function closeDb(): void
+    {
+        if (!$this->db->connect_error) {
+            mysqli_close($this->db);
         }
     }
 
-    private function closeDb()
-    {
-        mysql_close();
-    }
-
+    /**
+     * ContactsService constructor.
+     */
     public function __construct()
     {
         $this->contactsGateway = new ContactsGateway();
     }
 
-    public function getAllContacts($order)
+    /**
+     * @param string $order
+     *
+     * @return array|null
+     * @throws Exception
+     */
+    public function getAllContacts(?string $order): ?array
     {
         try {
             $this->openDb();
-            $res = $this->contactsGateway->selectAll($order);
+            $res = $this->contactsGateway->selectAll($order, $this->db);
             $this->closeDb();
             return $res;
         } catch (Exception $e) {
@@ -44,24 +68,38 @@ class ContactsService
         }
     }
 
-    public function getContact($id)
+    /**
+     * @param int $id
+     *
+     * @return null|object
+     * @throws Exception
+     */
+    public function getContact(int $id)
     {
         try {
             $this->openDb();
-            $res = $this->contactsGateway->selectById($id);
+            $res = $this->contactsGateway->selectById($id, $this->db);
             $this->closeDb();
             return $res;
         } catch (Exception $e) {
             $this->closeDb();
             throw $e;
         }
-        return $this->contactsGateway->find($id);
     }
 
-    private function validateContactParams($name, $phone, $email, $address)
-    {
+    /**
+     * @param string $name
+     * @param string $phone
+     * @param string $email
+     * @param string $address
+     *
+     * @throws ValidationException
+     */
+    private function validateContactParams(string $name, string $phone,
+        string $email, string $address
+    ): void {
         $errors = array();
-        if (!isset($name) || empty($name)) {
+        if ($name === null || empty($name)) {
             $errors[] = 'Name is required';
         }
         if (empty($errors)) {
@@ -70,12 +108,23 @@ class ContactsService
         throw new ValidationException($errors);
     }
 
-    public function createNewContact($name, $phone, $email, $address)
-    {
+    /**
+     * @param string $name
+     * @param string $phone
+     * @param string $email
+     * @param string $address
+     *
+     * @return int|null
+     * @throws Exception
+     */
+    public function createNewContact(string $name, string $phone, string $email,
+        string $address
+    ): ?int {
         try {
             $this->openDb();
             $this->validateContactParams($name, $phone, $email, $address);
             $res = $this->contactsGateway->insert(
+                $this->db,
                 $name, $phone, $email, $address
             );
             $this->closeDb();
@@ -86,11 +135,16 @@ class ContactsService
         }
     }
 
-    public function deleteContact($id)
+    /**
+     * @param int $id
+     *
+     * @throws Exception
+     */
+    public function deleteContact(int $id): void
     {
         try {
             $this->openDb();
-            $res = $this->contactsGateway->delete($id);
+            $this->contactsGateway->delete($this->db, $id);
             $this->closeDb();
         } catch (Exception $e) {
             $this->closeDb();

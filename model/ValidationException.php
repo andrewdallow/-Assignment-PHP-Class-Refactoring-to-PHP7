@@ -1,19 +1,20 @@
 <?php
 
-
 class ValidationException extends Exception
 {
 
-    private $errors = null;
+    private $errors;
 
     public function __construct($errors)
     {
-        parent::__construct("Validation error!");
+        parent::__construct('Validation error!');
         $this->errors = $errors;
     }
 
-
-    public function getErrors()
+    /**
+     * @return string
+     */
+    public function getErrors(): string
     {
         return $this->errors;
     }

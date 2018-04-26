@@ -1,58 +1,93 @@
 <?php
 
-
 class ContactsGateway
 {
 
-    public function selectAll($order)
+    /**
+     * @param null|string $order
+     * @param mysqli      $db
+     *
+     * @return array
+     * @throws Exception
+     */
+    public function selectAll(?string $order, mysqli $db): array
     {
-        if (!isset($order)) {
-            $order = "name";
+        if ($order === null) {
+            $order = 'name';
         }
-        $dbOrder = mysql_real_escape_string($order);
-        $dbres = mysql_query("SELECT * FROM contacts ORDER BY $dbOrder ASC");
+        $dbOrder = mysqli_real_escape_string($db, $order);
 
-        $contacts = array();
-        while (($obj = mysql_fetch_object($dbres)) != null) {
-            $contacts[] = $obj;
+        $dbres = $db->query("SELECT * FROM contacts ORDER BY $dbOrder ASC");
+
+        if ($dbres) {
+            $contacts = array();
+            while (($obj = mysqli_fetch_object($dbres)) !== null) {
+                $contacts[] = $obj;
+            }
+        } else {
+            throw new Exception('No contacts table not found.');
         }
-
         return $contacts;
     }
 
-    public function selectById($id)
+    /**
+     * @param int    $id
+     * @param mysqli $db
+     *
+     * @return null|object
+     */
+    public function selectById(int $id, mysqli $db)
     {
-        $dbId = mysql_real_escape_string($id);
+        $dbId = mysqli_real_escape_string($db, $id);
 
-        $dbres = mysql_query("SELECT * FROM contacts WHERE id=$dbId");
+        $dbres = $db->query("SELECT * FROM contacts WHERE id=$dbId");
 
-        return mysql_fetch_object($dbres);
+        return mysqli_fetch_object($dbres);
 
     }
 
-    public function insert($name, $phone, $email, $address)
-    {
-
-        $dbName = ($name != null) ? "'" . mysql_real_escape_string($name) . "'"
+    /**
+     * @param mysqli $db
+     * @param string $name
+     * @param string $phone
+     * @param string $email
+     * @param string $address
+     *
+     * @return int
+     */
+    public function insert(mysqli $db, string $name, string $phone,
+        string $email, string $address
+    ): int {
+        $dbName = ($name !== null) ? "'" . mysqli_real_escape_string($db, $name)
+            . "'"
             : 'NULL';
-        $dbPhone = ($phone != null) ? "'" . mysql_real_escape_string($phone)
+        $dbPhone = ($phone !== null) ? "'" . mysqli_real_escape_string(
+                $db, $phone
+            )
             . "'" : 'NULL';
-        $dbEmail = ($email != null) ? "'" . mysql_real_escape_string($email)
+        $dbEmail = ($email !== null) ? "'" . mysqli_real_escape_string(
+                $db, $email
+            )
             . "'" : 'NULL';
-        $dbAddress = ($address != null) ? "'" . mysql_real_escape_string(
+        $dbAddress = ($address !== null) ? "'" . mysqli_real_escape_string(
+                $db,
                 $address
             ) . "'" : 'NULL';
 
-        mysql_query(
+        $db->query(
             "INSERT INTO contacts (name, phone, email, address) VALUES ($dbName, $dbPhone, $dbEmail, $dbAddress)"
         );
-        return mysql_insert_id();
+        return $db->insert_id;
     }
 
-    public function delete($id)
+    /**
+     * @param mysqli $db
+     * @param int    $id
+     */
+    public function delete(mysqli $db, int $id): void
     {
-        $dbId = mysql_real_escape_string($id);
-        mysql_query("DELETE FROM contacts WHERE id=$dbId");
+        $dbId = mysqli_real_escape_string($db, $id);
+        $db->query("DELETE FROM contacts WHERE id=$dbId");
     }
 
 }

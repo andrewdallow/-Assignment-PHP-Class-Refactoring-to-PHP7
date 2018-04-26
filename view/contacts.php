@@ -42,19 +42,22 @@
     </tr>
     </thead>
     <tbody>
-    <?php foreach ($contacts as $contact): ?>
-        <tr>
-            <td>
-                <a href="index.php?op=show&id=<?php print $contact->id; ?>"><?php print htmlentities(
-                        $contact->name
-                    ); ?></a></td>
-            <td><?php print htmlentities($contact->phone); ?></td>
-            <td><?php print htmlentities($contact->email); ?></td>
-            <td><?php print htmlentities($contact->address); ?></td>
-            <td><a href="index.php?op=delete&id=<?php print $contact->id; ?>">delete</a>
-            </td>
-        </tr>
-    <?php endforeach; ?>
+    <?php if (isset($contacts)) {
+        foreach ($contacts as $contact): ?>
+            <tr>
+                <td>
+                    <a href="index.php?op=show&id=<?php print $contact->id; ?>"><?php print htmlentities(
+                            $contact->name
+                        ); ?></a></td>
+                <td><?php print htmlentities($contact->phone); ?></td>
+                <td><?php print htmlentities($contact->email); ?></td>
+                <td><?php print htmlentities($contact->address); ?></td>
+                <td>
+                    <a href="index.php?op=delete&id=<?php print $contact->id; ?>">delete</a>
+                </td>
+            </tr>
+        <?php endforeach;
+    } ?>
     </tbody>
 </table>
 </body>
